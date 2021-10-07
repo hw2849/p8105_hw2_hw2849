@@ -15,12 +15,117 @@ library(readxl)
 Use excel `Mr. Trash Wheel` dataset
 
 ```{r}
-litter_data = read_excel("./data/Trash-Wheel-Collection-Totals-8-6-19.xlsx", sheet = 1) %>%
+litter_data = read_excel("./data/Trash-Wheel-Collection-Totals-7-2021-sept.xlsx", sheet = 1) %>%
   janitor::clean_names() %>%
   drop_na(dumpster) %>%
   mutate(
     sports_balls = round(sports_balls, 0)
          )
 litter_data
+```
+
+Clean precipitation data for 2019.
+
+```{r}
+prep_2019 = read_excel("./data/Trash-Wheel-Collection-Totals-7-2021-sept.xlsx", sheet = 7, "A2:B14") %>%
+  janitor::clean_names() %>%
+  drop_na() %>% 
+  mutate(
+    year = 2019, month = month.name[as.numeric(month)]
+) 
+```
+
+Clean precipitation data for 2018.
+
+```{r}
+prep_2018 = read_excel("./data/Trash-Wheel-Collection-Totals-7-2021-sept.xlsx", sheet = 8, "A2:B14") %>% 
+   janitor::clean_names() %>%
+   drop_na() %>% 
+  mutate(
+    year = 2018, month = month.name[as.numeric(month)]
+) 
+```
+
+Combine two datasets
+
+```{r}
+combine_data = full_join(prep_2018, prep_2019)
+```
+
+Find the total Precipitation in 2018.
+
+```{r}
+combine_data %>% 
+filter(year == "2018") %>% 
+  pull(total) %>% 
+  sum()
+```
+
+Find the median number of sports balls in a dumpster in 2019
+
+```{r}
+filter(litter_data, year == "2019") %>% 
+  pull(sports_balls) %>% 
+  median()
+```
+
+`litter_data` dataset contains 344 observations and 17 variables, including years, months, dates, and different kinds of trash such as sports balls. Cleaned precipitation data for 2018 has 12 observations pf 3 variables, while for 2019 is 6 observations and 3 variables. The combined table has 18 observations of 3 variables in total. The total precipitation in 2018 was 70.33, and the median number of sports balls in a dumpster in 2019 was 9. 
+
+## Problem 2
+
+`pols-month.csv` separate `mon` into `ymd` and convert month to character
+
+president-gop-dem?? 
+
+```{r}
+pols_month = read_csv("./data/fivethirtyeight_datasets/pols-month.csv") %>% 
+  separate(mon, c("year", "month", "day")) %>% 
+  mutate(
+    month = month.name[as.numeric(month)] 
+  ) %>% 
+
+ ## select(ends_with("gop") | ends_with("dem"))
+  
+ select(-day)
+
+```
+
+clean the data in `snp.csv`
+
+```{r}
+snp_df = read_csv("./data/fivethirtyeight_datasets/snp.csv") %>% 
+  mutate(
+    date = lubridate::mdy(date)
+  ) %>% 
+  separate(date, c("year", "month", "day")) %>% 
+  mutate(
+    month = month.name[as.numeric(month)],
+    year = as.numeric(year),
+     year = ifelse(year > 2021, year - 100, year)
+  ) %>% mutate(year = as.character(year)) %>% 
+   
+  select(-day)
+
+```
+
+Tidy the unemployment data
+
+```{r}
+unemployment = read_csv("./data/fivethirtyeight_datasets/unemployment.csv") %>% 
+  rename(year = Year) %>% 
+  pivot_longer(
+    Jan:Dec,
+    names_to = "month",
+    values_to = "unemployment"
+    ) %>% 
+  mutate(year = as.character(year))
+```
+
+Join the datasets by merging `snp` into `pols`, and merging `unemployment` into the result.
+
+```{r}
+snp_into_pols = full_join(snp_df, pols_month)
+
+results = full_join(unemployment, snp_into_pols)
 ```
 
