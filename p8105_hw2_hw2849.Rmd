@@ -5,58 +5,65 @@ date: 2021.10.04
 output: github_document
 ---
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 library(tidyverse)
 library(readxl)
 library(dplyr)
-
 ```
 
 ## Problem 1
 
 Use excel `Mr. Trash Wheel` dataset
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 litter_data = read_excel("./data/Trash-Wheel-Collection-Totals-7-2021-sept.xlsx", sheet = 1) %>%
   janitor::clean_names() %>%
+  select(dumpster:homes_powered) %>% 
   drop_na(dumpster) %>%
   mutate(
     sports_balls = round(sports_balls, 0)
          )
-litter_data
+
+head(litter_data, 5)
 ```
 
 Clean precipitation data for 2019.
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 prep_2019 = read_excel("./data/Trash-Wheel-Collection-Totals-7-2021-sept.xlsx", sheet = 7, "A2:B14") %>%
   janitor::clean_names() %>%
   drop_na() %>% 
   mutate(
     year = 2019, month = month.name[as.numeric(month)]
 ) 
+
+head(prep_2019, 5)
 ```
 
 Clean precipitation data for 2018.
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 prep_2018 = read_excel("./data/Trash-Wheel-Collection-Totals-7-2021-sept.xlsx", sheet = 8, "A2:B14") %>% 
    janitor::clean_names() %>%
    drop_na() %>% 
   mutate(
     year = 2018, month = month.name[as.numeric(month)]
 ) 
+
+head(prep_2018, 5)
 ```
 
 Combine two datasets
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 combine_data = full_join(prep_2018, prep_2019)
+
+head(combine_data, 5)
 ```
 
 Find the total Precipitation in 2018.
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 combine_data %>% 
 filter(year == "2018") %>% 
   pull(total) %>% 
@@ -65,7 +72,7 @@ filter(year == "2018") %>%
 
 Find the median number of sports balls in a dumpster in 2019
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 filter(litter_data, year == "2019") %>% 
   pull(sports_balls) %>% 
   median()
@@ -77,7 +84,7 @@ filter(litter_data, year == "2019") %>%
 
 Let's tidy `pols-month.csv`.
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 pols_month = read_csv("./data/fivethirtyeight_datasets/pols-month.csv") %>% 
   
 ## separate `mon` into `ymd` and convert month to character
@@ -98,11 +105,12 @@ pols_month = read_csv("./data/fivethirtyeight_datasets/pols-month.csv") %>%
 ## get rid of the column of day and prez_gop and prez_dem
  select(-day, -gop_dem)
 
+head(pols_month, 5)
 ```
 
 clean the data in `snp.csv`
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 snp_df = read_csv("./data/fivethirtyeight_datasets/snp.csv") %>% 
   
 ## Separate `date` into `ymd`
@@ -114,19 +122,20 @@ snp_df = read_csv("./data/fivethirtyeight_datasets/snp.csv") %>%
   separate(date, c("year", "month", "day")) %>% 
   mutate(
     month = month.name[as.numeric(month)],
-    year = as.numeric(year),
-     year = ifelse(year > 2021, year - 100, year)
+   year = as.numeric(year),
+   year = ifelse(year > 2021, year - 100, year)
   ) %>% 
   mutate(year = as.character(year)) %>% 
 
 ## remove the day variable
   select(-day)
 
+head(snp_df, 5)
 ```
 
 Tidy the unemployment data
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 unemployment = read_csv("./data/fivethirtyeight_datasets/unemployment.csv") %>% 
   rename(year = Year) %>% 
   
@@ -137,41 +146,70 @@ unemployment = read_csv("./data/fivethirtyeight_datasets/unemployment.csv") %>%
     values_to = "unemployment"
     ) %>% 
   mutate(year = as.character(year))
+
+head(unemployment, 5)
 ```
 
 Join the datasets by merging `snp` into `pols`, and merging `unemployment` into the result.
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 ## join snp_df into pols_month table with left_join function
 snp_into_pols = left_join(pols_month, snp_df)
 
 ## merging unemployment into the table above 
 results = left_join(snp_into_pols, unemployment)
+
+head(snp_into_pols, 5)
+head(results, 5)
 ```
+
+In a summary, we used the `FiveThirtyEight` dataset. The `pols-month.csv` table contains 822 rows and 9 variables, including year, month, and president in that year. `snp_df` table contains 787 rows and 3 columns with variables year, month, and close. And `unemployment` table contains 816 rows and 3 columns with variables year, month, and unemployment rate. Then we combined all three tables together by common variable `year` and `month`, getting new tables `results`, which contains 822 rows and 11 variables. 
 
 
 ## Problem 3
 
 Let's tidy the dataset of NYC popularity of baby names. 
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 baby_name = read_csv("./data/Popular_Baby_Names.csv") %>% 
   janitor::clean_names() %>%
   
 ## remove duplicated rows
   distinct() %>% 
   
+## organize the names of a categorical predictor 
+  mutate(
+    ethnicity = replace(ethnicity, ethnicity == "ASIAN AND PACI", "ASIAN AND PACIFIC ISLANDER"),
+      ethnicity = replace(ethnicity,  ethnicity == "BLACK NON HISP", "BLACK NON HISPANIC"), 
+      ethnicity = replace(ethnicity,  ethnicity == "WHITE NON HISP", "WHITE NON HISPANIC")
+  ) %>%
+
 ## solve case structure of string variables (child's name)
   mutate(
     childs_first_name = str_to_sentence(childs_first_name)
   )
 
+head(baby_name, 5)
+
 ## creating a table showing the rank in popularity of Olivia(female) over time
-olivia_df = filter(baby_name, gender == "FEMALE", childs_first_name == "Olivia")
+olivia_df = baby_name %>% 
+select(-count) %>% 
+  filter( gender == "FEMALE", childs_first_name == "Olivia") %>% 
+  pivot_wider(
+    names_from = "year_of_birth",
+    values_from = "rank"
+  )
 
 ## creating a table for most popular male name over time
-most_popular_male_name = filter(baby_name, gender == "MALE", rank == "1")
+most_popular_male_name = baby_name %>% 
+  filter(gender == "MALE", rank == "1") %>% 
+select(-rank, -count) %>% 
+  pivot_wider(
+    names_from = "year_of_birth",
+    values_from = "childs_first_name"
+  )
 
+## a scatterplot for number of children with a name vs rank in popularity
 baby_name %>% 
   filter(
     gender == "MALE", 
@@ -186,4 +224,6 @@ baby_name %>%
        y = "Number of children with a name"
 )
 ```
+
+In this problem, we removed duplicated rows and then organized the categorical names and names' cases structure, so the `baby_name` table contains 12181 observations with 6 variables, such as year of birth, gender, ethnicity, names, and popularity of the name. Next, we created a table for the female name `Olivia` to see the popularity over years. And we did similar process to the most popular male names over time. At last, we drew a scatterplot to show the rank in popularity of names vs the counts of children with a name. 
 
