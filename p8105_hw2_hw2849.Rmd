@@ -8,6 +8,8 @@ output: github_document
 ```{r}
 library(tidyverse)
 library(readxl)
+library(dplyr)
+
 ```
 
 ## Problem 1
@@ -73,20 +75,28 @@ filter(litter_data, year == "2019") %>%
 
 ## Problem 2
 
-`pols-month.csv` separate `mon` into `ymd` and convert month to character
-
-president-gop-dem?? 
+Let's tidy `pols-month.csv`.
 
 ```{r}
 pols_month = read_csv("./data/fivethirtyeight_datasets/pols-month.csv") %>% 
+  
+## separate `mon` into `ymd` and convert month to character
   separate(mon, c("year", "month", "day")) %>% 
   mutate(
-    month = month.name[as.numeric(month)] 
+    month = month.name[as.numeric(month)], 
   ) %>% 
-
- ## select(ends_with("gop") | ends_with("dem"))
   
- select(-day)
+## create a president variable with values of gop and dem
+  pivot_longer(
+    prez_gop | prez_dem,
+    names_to = "president",
+    names_prefix = "prez_",
+    values_to = "gop_dem"
+  ) %>% 
+  filter(gop_dem != 0) %>% 
+  
+## get rid of the column of day and prez_gop and prez_dem
+ select(-day, -gop_dem)
 
 ```
 
@@ -94,16 +104,22 @@ clean the data in `snp.csv`
 
 ```{r}
 snp_df = read_csv("./data/fivethirtyeight_datasets/snp.csv") %>% 
+  
+## Separate `date` into `ymd`
   mutate(
     date = lubridate::mdy(date)
   ) %>% 
+  
+## Convert month to character and make year varibale true to the reality
   separate(date, c("year", "month", "day")) %>% 
   mutate(
     month = month.name[as.numeric(month)],
     year = as.numeric(year),
      year = ifelse(year > 2021, year - 100, year)
-  ) %>% mutate(year = as.character(year)) %>% 
-   
+  ) %>% 
+  mutate(year = as.character(year)) %>% 
+
+## remove the day variable
   select(-day)
 
 ```
@@ -113,6 +129,8 @@ Tidy the unemployment data
 ```{r}
 unemployment = read_csv("./data/fivethirtyeight_datasets/unemployment.csv") %>% 
   rename(year = Year) %>% 
+  
+## organize this data with pivot_longer
   pivot_longer(
     Jan:Dec,
     names_to = "month",
@@ -124,8 +142,48 @@ unemployment = read_csv("./data/fivethirtyeight_datasets/unemployment.csv") %>%
 Join the datasets by merging `snp` into `pols`, and merging `unemployment` into the result.
 
 ```{r}
-snp_into_pols = full_join(snp_df, pols_month)
+## join snp_df into pols_month table with left_join function
+snp_into_pols = left_join(pols_month, snp_df)
 
-results = full_join(unemployment, snp_into_pols)
+## merging unemployment into the table above 
+results = left_join(snp_into_pols, unemployment)
+```
+
+
+## Problem 3
+
+Let's tidy the dataset of NYC popularity of baby names. 
+
+```{r}
+baby_name = read_csv("./data/Popular_Baby_Names.csv") %>% 
+  janitor::clean_names() %>%
+  
+## remove duplicated rows
+  distinct() %>% 
+  
+## solve case structure of string variables (child's name)
+  mutate(
+    childs_first_name = str_to_sentence(childs_first_name)
+  )
+
+## creating a table showing the rank in popularity of Olivia(female) over time
+olivia_df = filter(baby_name, gender == "FEMALE", childs_first_name == "Olivia")
+
+## creating a table for most popular male name over time
+most_popular_male_name = filter(baby_name, gender == "MALE", rank == "1")
+
+baby_name %>% 
+  filter(
+    gender == "MALE", 
+    year_of_birth == "2016", 
+    ethnicity == "WHITE NON HISPANIC"
+    ) %>% 
+  ggplot(aes(x = rank, y = count)) + 
+  geom_point() + 
+  labs(
+    title = "Popularity White Non-Hispanic Male Children's names in 2016",
+       x = "Rank in popularity of names",
+       y = "Number of children with a name"
+)
 ```
 
