@@ -8,7 +8,6 @@ output: github_document
 ```{r, message = FALSE, warning = FALSE}
 library(tidyverse)
 library(readxl)
-library(dplyr)
 ```
 
 ## Problem 1
@@ -16,7 +15,7 @@ library(dplyr)
 Use excel `Mr. Trash Wheel` dataset
 
 ```{r, message = FALSE, warning = FALSE}
-litter_data = read_excel("./data/Trash-Wheel-Collection-Totals-7-2021-sept.xlsx", sheet = 1) %>%
+litter_data = read_excel("./data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", sheet = 1) %>%
   janitor::clean_names() %>%
   select(dumpster:homes_powered) %>% 
   drop_na(dumpster) %>%
@@ -30,7 +29,7 @@ head(litter_data, 5)
 Clean precipitation data for 2019.
 
 ```{r, message = FALSE, warning = FALSE}
-prep_2019 = read_excel("./data/Trash-Wheel-Collection-Totals-7-2021-sept.xlsx", sheet = 7, "A2:B14") %>%
+prep_2019 = read_excel("./data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", sheet = 6, "A2:B14") %>%
   janitor::clean_names() %>%
   drop_na() %>% 
   mutate(
@@ -43,7 +42,7 @@ head(prep_2019, 5)
 Clean precipitation data for 2018.
 
 ```{r, message = FALSE, warning = FALSE}
-prep_2018 = read_excel("./data/Trash-Wheel-Collection-Totals-7-2021-sept.xlsx", sheet = 8, "A2:B14") %>% 
+prep_2018 = read_excel("./data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", sheet = 7, "A2:B14") %>% 
    janitor::clean_names() %>%
    drop_na() %>% 
   mutate(
